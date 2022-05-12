@@ -6427,7 +6427,7 @@ load_init_program_at_path(proc_t p, user_addr_t scratch_addr, const char* path)
 	 * So that init task is set with uid,gid 0 token
 	 */
 	set_security_token(p);
-
+	// 这里执行execve
 	return execve(p, &init_exec_args, retval);
 }
 
@@ -6526,9 +6526,22 @@ load_init_program(proc_t p)
 	}
 #endif
 
+	//下面是要加载的初始化程序
+	/**
+	 static const char * init_programs[] = {
+		#if DEBUG
+			"/usr/appleinternal/sbin/launchd.debug",
+		#endif
+		#if DEVELOPMENT || DEBUG
+			"/usr/appleinternal/sbin/launchd.development",
+		#endif
+			"/sbin/launchd",
+	 }; 
+	 */
 	error = ENOENT;
 	for (i = 0; i < sizeof(init_programs) / sizeof(init_programs[0]); i++) {
 		printf("load_init_program: attempting to load %s\n", init_programs[i]);
+		//这里会将init_programs中的初始化代码全部加载一遍
 		error = load_init_program_at_path(p, (user_addr_t)scratch_addr, init_programs[i]);
 		if (!error) {
 			return;
