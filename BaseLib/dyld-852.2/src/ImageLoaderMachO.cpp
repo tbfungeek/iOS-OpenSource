@@ -2258,6 +2258,7 @@ void ImageLoaderMachO::doImageInit(const LinkContext& context)
 					if ( ! this->containsAddress(stripPointer((void*)func)) ) {
 						dyld::throwf("initializer function %p not in mapped image for %s\n", func, this->getPath());
 					}
+					//这里要保证libSystemInitialized初始化
 					if ( ! dyld::gProcessInfo->libSystemInitialized ) {
 						// <rdar://problem/17973316> libSystem initializer must run first
 						dyld::throwf("-init function in image (%s) that does not link with libSystem.dylib\n", this->getPath());
@@ -2313,6 +2314,7 @@ void ImageLoaderMachO::doModInitFunctions(const LinkContext& context)
 								dyld::throwf("initializer function %p not in mapped image for %s\n", func, this->getPath());
 							}
 							if ( ! dyld::gProcessInfo->libSystemInitialized ) {
+								// 在这里执行libSystem initializer 初始化
 								// <rdar://problem/17973316> libSystem initializer must run first
 								const char* installPath = getInstallPath();
 								if ( (installPath == NULL) || (strcmp(installPath, libSystemPath(context)) != 0) )
@@ -2419,7 +2421,9 @@ bool ImageLoaderMachO::doInitialization(const LinkContext& context)
 	CRSetCrashLogMessage2(this->getPath());
 
 	// mach-o has -init and static initializers
+	// 初始化image
 	doImageInit(context);
+	// 初始化全局C++对象的构造函数，内部进行了libSystem库的初始化
 	doModInitFunctions(context);
 	
 	CRSetCrashLogMessage2(NULL);

@@ -117,7 +117,7 @@ Lapple:	movl	(%ebx),%ecx	# look for NULL ending env[] array
 	testl	%ecx,%ecx
 	jne	Lapple		# once found, next pointer is "apple" parameter now in %ebx
 	movl	%ebx,12(%esp)	# main param4 = apple
-	pushl	%edx		# simulate return address into _start in libdyld
+	pushl	%edx		# simulate return address into _start in libfdyld
 	jmp	*%eax		# jump to main(argc,argv,env,apple) with return address set to _start
 
 #endif /* __i386__  && !TARGET_OS_SIMULATOR*/
@@ -211,7 +211,7 @@ Lapple:	ldr	r4, [r3]
 
 
 
-
+//这里为dyld的开头
 #if __arm64__ && !TARGET_OS_SIMULATOR
 	.text
 	.align 2
@@ -237,6 +237,7 @@ __dyld_start:
 	add 	x3,x3,___dso_handle@pageoff // get dyld's mh in to x4
 	mov	x4,sp                   // x5 has &startGlue
 
+	// 这里调用到dyldInitiataion.h 的start方法
 	// call dyldbootstrap::start(app_mh, argc, argv, dyld_mh, &startGlue)
 	bl	__ZN13dyldbootstrap5startEPKN5dyld311MachOLoadedEiPPKcS3_Pm
 	mov	x16,x0                  // save entry point address in x16

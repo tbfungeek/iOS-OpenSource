@@ -525,11 +525,13 @@ void ImageLoader::link(const LinkContext& context, bool forceLazysBound, bool pr
 	{
 		dyld3::ScopedTimer(DBG_DYLD_TIMING_APPLY_FIXUPS, 0, 0, 0);
 		t2 = mach_absolute_time();
+		//这里进行rebase
 		this->recursiveRebaseWithAccounting(context);
 		context.notifyBatch(dyld_image_state_rebased, false);
 
 		t3 = mach_absolute_time();
 		if ( !context.linkingMainExecutable )
+			//这里进行bind
 			this->recursiveBindWithAccounting(context, forceLazysBound, neverUnload);
 
 		t4 = mach_absolute_time();
@@ -1649,6 +1651,7 @@ void ImageLoader::recursiveInitialization(const LinkContext& context, mach_port_
 
 			// let objc know we are about to initialize this image
 			uint64_t t1 = mach_absolute_time();
+			//初始化结束 这里会触发调用load_image
 			fState = dyld_image_state_dependents_initialized;
 			oldState = fState;
 			context.notifySingle(dyld_image_state_dependents_initialized, this, &timingInfo);

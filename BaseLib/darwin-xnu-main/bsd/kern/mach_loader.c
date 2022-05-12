@@ -532,6 +532,7 @@ load_machfile(
 		vm_map_get_max_aslr_slide_section(map, &aslr_section_offset, &aslr_section_size);
 		aslr_section_offset = (random() % aslr_section_offset) * aslr_section_size;
 
+		//计算aslr
 		aslr_page_offset = random();
 		aslr_page_offset %= vm_map_get_max_aslr_slide_pages(map);
 		aslr_page_offset <<= vm_map_page_shift(map);
@@ -557,7 +558,7 @@ load_machfile(
 	 */
 	result->is_64bit_addr = ((imgp->ip_flags & IMGPF_IS_64BIT_ADDR) == IMGPF_IS_64BIT_ADDR);
 	result->is_64bit_data = ((imgp->ip_flags & IMGPF_IS_64BIT_DATA) == IMGPF_IS_64BIT_DATA);
-
+	// 解析Mach-O 文件
 	lret = parse_machfile(vp, map, thread, header, file_offset, macho_size,
 	    0, aslr_page_offset, dyld_aslr_page_offset, result,
 	    NULL, imgp);
@@ -794,6 +795,7 @@ parse_machfile(
 	effective_page_size = vm_map_page_size(map);
 #endif /* __arm64__ */
 
+	//校验Mach-O头
 	if (header->magic == MH_MAGIC_64 ||
 	    header->magic == MH_CIGAM_64) {
 		mach_header_sz = sizeof(struct mach_header_64);
@@ -802,6 +804,8 @@ parse_machfile(
 	/*
 	 *	Break infinite recursion
 	 */
+
+	// depth = 0 1 2
 	if (depth > 2) {
 		return LOAD_FAILURE;
 	}
@@ -829,11 +833,13 @@ parse_machfile(
 		if (depth != 1 && depth != 3) {
 			return LOAD_FAILURE;
 		}
+		// depth  == 1 时候执行的
 		if (header->flags & MH_DYLDLINK) {
 			/* Check properties of dynamic executables */
 			if (!(header->flags & MH_PIE) && pie_required(header->cputype, header->cpusubtype & ~CPU_SUBTYPE_MASK)) {
 				return LOAD_FAILURE;
 			}
+			//设置需要dynlinker
 			result->needs_dynlinker = TRUE;
 		} else if (header->cputype == CPU_TYPE_X86_64) {
 			/* x86_64 static binaries allowed */
@@ -845,6 +851,7 @@ parse_machfile(
 		}
 		break;
 	case MH_DYLINKER:
+		//depth == 2 的时候执行
 		if (depth != 2) {
 			return LOAD_FAILURE;
 		}
@@ -878,6 +885,7 @@ parse_machfile(
 	/*
 	 * Map the load commands into kernel memory.
 	 */
+	// 将 load command 加载到内核内存
 	addr = kalloc(alloc_size);
 	if (addr == NULL) {
 		return LOAD_NOSPACE;
@@ -1020,7 +1028,8 @@ parse_machfile(
 		 */
 		offset = mach_header_sz;
 		ncmds = header->ncmds;
-
+		
+		//加载loadCommand
 		while (ncmds--) {
 			/* ensure enough space for a minimal load command */
 			if (offset + sizeof(struct load_command) > cmds_size) {
@@ -1208,6 +1217,7 @@ parse_machfile(
 					result);
 				break;
 			}
+			//加载main
 			case LC_MAIN:
 				if (pass != 1) {
 					break;
@@ -1221,11 +1231,13 @@ parse_machfile(
 					slide,
 					result);
 				break;
+			//加载dylinker
 			case LC_LOAD_DYLINKER:
 				if (pass != 3) {
 					break;
 				}
 				if ((depth == 1) && (dlp == 0)) {
+					//设置dlp也就是dyldlinker地址
 					dlp = (struct dylinker_command *)lcp;
 				} else {
 					ret = LOAD_FAILURE;
@@ -1424,6 +1436,7 @@ parse_machfile(
 		}
 	}
 
+	// 加载成功
 	if (ret == LOAD_SUCCESS) {
 		if (!got_code_signatures && cs_process_global_enforcement()) {
 			ret = LOAD_FAILURE;
@@ -1434,11 +1447,13 @@ parse_machfile(
 			ret = LOAD_FAILURE;
 		}
 
+		// 需要加载dyld 并且已经获得地址
 		if ((ret == LOAD_SUCCESS) && (dlp != 0)) {
 			/*
 			 * load the dylinker, and slide it by the independent DYLD ASLR
 			 * offset regardless of the PIE-ness of the main binary.
 			 */
+			//加载dyldlinker
 			ret = load_dylinker(dlp, header->cputype, map, thread, depth,
 			    dyld_aslr_offset, result, imgp);
 		}
@@ -3019,6 +3034,7 @@ load_dylinker(
 #endif
 
 #if !(DEVELOPMENT || DEBUG)
+	// 校验地址
 	if (0 != strcmp(name, DEFAULT_DYLD_PATH)) {
 		return LOAD_BADMACHO;
 	}
@@ -3045,8 +3061,11 @@ load_dylinker(
 	myresult->is_64bit_addr = result->is_64bit_addr;
 	myresult->is_64bit_data = result->is_64bit_data;
 
+	// 解析dyldlinker mach 文件
 	ret = parse_machfile(vp, map, thread, header, file_offset,
 	    macho_size, depth, slide, 0, myresult, result, imgp);
+
+	//myresult
 
 	if (ret == LOAD_SUCCESS) {
 		if (result->threadstate) {

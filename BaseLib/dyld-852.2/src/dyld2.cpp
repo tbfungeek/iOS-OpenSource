@@ -1107,6 +1107,7 @@ static void notifySingle(dyld_image_states state, const ImageLoader* image, Imag
 		}
 	}
 	if ( (state == dyld_image_state_dependents_initialized) && (sNotifyObjCInit != NULL) && image->notifyObjC() ) {
+		//发送状态通知的时候如果状态为dyld_image_state_dependents_initialized则通知loadimage
 		uint64_t t0 = mach_absolute_time();
 		dyld3::ScopedTimer timer(DBG_DYLD_TIMING_OBJC_INIT, (uint64_t)image->machHeader(), 0, 0);
 		(*sNotifyObjCInit)(image->getRealPath(), image->machHeader());
@@ -1292,6 +1293,7 @@ static void notifyBatchPartial(dyld_image_states state, bool orLater, dyld_image
 					}
 				}
 			}
+			// 镜像bound之后就会收到map_image的通知
 			// tell objc about new images
 			if ( (onlyHandler == NULL) && ((state == dyld_image_state_bound) || (orLater && (dyld_image_state_bound > state))) && (sNotifyObjCMapped != NULL) ) {
 				const char* paths[imageCount];
@@ -1739,7 +1741,7 @@ void initializeMainExecutable()
 {
 	// record that we've reached this step
 	gLinkContext.startedInitializingMainExecutable = true;
-
+	// 所依赖的动态库先初始化
 	// run initialzers for any inserted dylibs
 	ImageLoader::InitializerTimingList initializerTimes[allImagesCount()];
 	initializerTimes[0].count = 0;
@@ -1750,6 +1752,7 @@ void initializeMainExecutable()
 		}
 	}
 	
+	//最后初始化主可执行文件
 	// run initializers for main executable and everything it brings up 
 	sMainExecutable->runInitializers(gLinkContext, initializerTimes[0]);
 	
@@ -4744,11 +4747,12 @@ void registerImageStateBatchChangeHandler(dyld_image_states state, dyld_image_st
 		}
 	}
 }
-
-
+// dyld 注册 map_images, load_images 的流程
+// 镜像初始化-> doModInitFunctions -> libSystem_initializer -> libdispatch_init -> _os_object_init -> _objc_init() -> _dyld_objc_notify_register -> registerObjCNotifiers
 void registerObjCNotifiers(_dyld_objc_notify_mapped mapped, _dyld_objc_notify_init init, _dyld_objc_notify_unmapped unmapped)
 {
 	// record functions to call
+	// 这里很关键
 	sNotifyObjCMapped	= mapped;
 	sNotifyObjCInit		= init;
 	sNotifyObjCUnmapped = unmapped;
@@ -6607,6 +6611,7 @@ _main(const macho_header* mainExecutableMH, uintptr_t mainExecutableSlide,
 
 	CRSetCrashLogMessage("dyld: launch started");
 
+	//这里有很重要的注册上下文回调
 	setContext(mainExecutableMH, argc, argv, envp, apple);
 
 	// Pickup the pointer to the exec path.
@@ -7107,6 +7112,7 @@ reloadAllImages:
 
 		CRSetCrashLogMessage(sLoadingCrashMessage);
 		// instantiate ImageLoader for main executable
+		// 使用主可执行文件初始化为镜像加载器
 		sMainExecutable = instantiateFromLoadedImage(mainExecutableMH, mainExecutableSlide, sExecPath);
 		gLinkContext.mainExecutable = sMainExecutable;
 		gLinkContext.mainExecutableCodeSigned = hasCodeSignatureLoadCommand(mainExecutableMH);
@@ -7237,6 +7243,7 @@ reloadAllImages:
 			sMainExecutable->rebase(gLinkContext, -mainExecutableSlide);
 		}
 #endif
+		//使用主可执行文件链接动态库 包括Rebase/Bind两个阶段
 		link(sMainExecutable, sEnv.DYLD_BIND_AT_LAUNCH, true, ImageLoader::RPathChain(NULL, NULL), -1);
 		sMainExecutable->setNeverUnloadRecursive();
 		if ( sMainExecutable->forceFlat() ) {
@@ -7339,6 +7346,7 @@ reloadAllImages:
 			initializeMainExecutable(); 
 	#else
 		// run all initializers
+		//执行全部的初始化
 		initializeMainExecutable(); 
 	#endif
 
@@ -7359,6 +7367,7 @@ reloadAllImages:
 		else
 #endif
 		{
+			//拿到主可执行文件main入口
 			// find entry point for main executable
 			result = (uintptr_t)sMainExecutable->getEntryFromLC_MAIN();
 			if ( result != 0 ) {

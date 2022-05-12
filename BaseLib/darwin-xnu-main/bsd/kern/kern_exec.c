@@ -1005,6 +1005,7 @@ exec_mach_imgact(struct image_params *imgp)
 	os_reason_t             exec_failure_reason = OS_REASON_NULL;
 	boolean_t               reslide = FALSE;
 
+	// 对MachO 镜像进行一系列校验
 	/*
 	 * make sure it's a Mach-O 1.0 or Mach-O 2.0 binary; the difference
 	 * is a reserved field on the end, so for the most part, we can
@@ -1161,6 +1162,7 @@ grade:
 	/*
 	 * Actually load the image file we previously decided to load.
 	 */
+	//加载MachO 文件
 	lret = load_machfile(imgp, mach_header, thread, &map, &load_result);
 	if (lret != LOAD_SUCCESS) {
 		error = load_return_to_errno(lret);
@@ -1861,6 +1863,7 @@ encapsulated_binary:
 	}
 	error = -1;
 	for (i = 0; error == -1 && execsw[i].ex_imgact != NULL; i++) {
+		//调用镜像激活器激活当前镜像
 		error = (*execsw[i].ex_imgact)(imgp);
 
 		switch (error) {
@@ -4612,6 +4615,7 @@ __mac_execve(proc_t p, struct __mac_execve_args *uap, int32_t *retval)
 
 	imgp->ip_subsystem_root_path = p->p_subsystem_root_path;
 
+	//激活launchd镜像
 	error = exec_activate_image(imgp);
 	/* thread and task ref returned for vfexec case */
 
@@ -6444,6 +6448,11 @@ static const char * init_programs[] = {
 /*
  * load_init_program
  *
+ * https://en.wikipedia.org/wiki/Launchd
+ * 
+ * aunchd在系统和用户级别管理守护进程。与 xinetd 类似，launchd 可以按需启动守护进程。
+ * 与 watchdogd 类似，launchd 可以监控守护进程以确保它们继续运行。在 macOS 上， launchd 也将 init 替换为PID 1，因此它负责在引导时启动系统。
+ * 
  * Description:	Load the "init" program; in most cases, this will be "launchd"
  *
  * Parameters:	p			Process to call execve() to create

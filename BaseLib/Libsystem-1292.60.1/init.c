@@ -238,6 +238,7 @@ libSystem_initializer(int argc,
 	_dyld_initializer();
 	_libSystem_ktrace_init_func(DYLD);
 
+	//这里会初始化dyld_init()
 	libdispatch_init();
 	_libSystem_ktrace_init_func(LIBDISPATCH);
 

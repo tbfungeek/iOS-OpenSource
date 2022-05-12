@@ -1649,7 +1649,7 @@ void AllImages::runLibSystemInitializer(LoadedImage& libSystem)
     // run all initializers in libSystem.dylib
     // Note: during libSystem's initialization, libdyld_initializer() is called which copies _initialImages to _loadedImages
     runAllInitializersInImage(libSystem.image(), libSystem.loadedAddress());
-
+    // 这里是libSystemInitialized初始化完成标志 ？？？？？
     // update global flags that libsystem has been initialized (so debug tools know it is safe to inject threads)
     _oldAllImageInfos->libSystemInitialized = true;
 

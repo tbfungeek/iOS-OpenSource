@@ -144,6 +144,7 @@ uintptr_t start(const dyld3::MachOLoaded* appsMachHeader, int argc, const char* 
 
 	// now that we are done bootstrapping dyld, call dyld's main
 	uintptr_t appsSlide = appsMachHeader->getSlide();
+	//这里调用main方法
 	return dyld::_main((macho_header*)appsMachHeader, appsSlide, argc, argv, envp, apple, startGlue);
 }
 
