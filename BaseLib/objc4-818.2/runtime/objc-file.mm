@@ -55,7 +55,7 @@ T* getDataSection(const headerType *mhdr, const char *sectname,
     }
 
 //      function name                 content type     section name
-GETSECT(_getObjc2SelectorRefs,        SEL,             "__objc_selrefs"); 
+GETSECT(_getObjc2SelectorRefs,        SEL,             "__objc_selrefs"); //objc引用的SEL列表
 GETSECT(_getObjc2MessageRefs,         message_ref_t,   "__objc_msgrefs"); 
 GETSECT(_getObjc2ClassRefs,           Class,           "__objc_classrefs");
 GETSECT(_getObjc2SuperRefs,           Class,           "__objc_superrefs");
@@ -67,6 +67,31 @@ GETSECT(_getObjc2NonlazyCategoryList, category_t * const,    "__objc_nlcatlist")
 GETSECT(_getObjc2ProtocolList,        protocol_t * const,    "__objc_protolist");
 GETSECT(_getObjc2ProtocolRefs,        protocol_t *,    "__objc_protorefs");
 GETSECT(getLibobjcInitializers,       UnsignedInitializer, "__objc_init_func");
+
+
+/*
+__nl_symbol_ptr	动态符号链接相关,指针数组
+__got	全局偏移表, Global Offset Table
+__la_symbol_ptr	动态符号链接相关，也是指针数组，通过dyld_stub_binder辅助链接
+__mod_init_func	初始化的全局函数地址，会在main之前被调用
+__const	const修饰的常量
+__cstring	程序中硬编码的ANSI的字符串
+__cfstring	CF用到的字符串
+__objc_classlist	objc类列表
+__objc_nlclslist	objcload方法列表
+__objc_catlist	objc category列表
+__objc_protolist	objc protocol列表
+__objc_imageinfo	镜像信息
+__objc_const	objc的常量
+__objc_selrefs	objc引用的SEL列表
+__objc_protorefs	objc引用的protocol列表
+__objc_classrefs	objc引用的class列表
+__objc_superrefs	objc父类的引用列表
+__objc_ivar	objcivar信息
+__objc_data	class信息
+__bss	未初始化的静态变量区
+__data	初始化的可变变量
+*/
 
 uint32_t *getLibobjcInitializerOffsets(const headerType *mhdr, size_t *outCount) {
     unsigned long byteCount = 0;

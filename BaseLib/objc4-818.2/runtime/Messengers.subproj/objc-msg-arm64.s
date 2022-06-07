@@ -551,14 +551,14 @@ _objc_debug_taggedpointer_classes:
 	ENTRY _objc_msgSend
 	UNWIND _objc_msgSend, NoFrame
 
-	cmp	p0, #0			// nil check and tagged pointer check
+	cmp	p0, #0			// nil check and tagged pointer check //1.判断接收者是否存在
 #if SUPPORT_TAGGED_POINTERS
 	b.le	LNilOrTagged		//  (MSB tagged pointer looks negative)
 #else
 	b.eq	LReturnZero
 #endif
 	ldr	p13, [x0]		// p13 = isa
-	GetClassFromIsa_p16 p13, 1, x0	// p16 = class
+	GetClassFromIsa_p16 p13, 1, x0	// p16 = class //2.通过对象isa 获取class
 LGetIsaDone:
 	// calls imp or objc_msgSend_uncached
 	CacheLookup NORMAL, _objc_msgSend, __objc_msgSend_uncached

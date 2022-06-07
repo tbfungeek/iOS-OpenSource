@@ -3353,8 +3353,9 @@ Class readClass(Class cls, bool headerIsBundle, bool headerIsPreoptimized)
                             "because the real class is too big.",
                             cls->nameForLogging());
             }
-
+            //获取rw
             class_rw_t *rw = newCls->data();
+            //从rw中拿到ro
             const class_ro_t *old_ro = rw->ro();
             memcpy(newCls, cls, sizeof(objc_class));
 
@@ -3622,6 +3623,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             continue;
         }
 
+        //这里从镜像加载类列表
         classref_t const *classlist = _getObjc2ClassList(hi, &count);
 
         bool headerIsBundle = hi->isBundle();

@@ -6450,7 +6450,7 @@ static const char * init_programs[] = {
  *
  * https://en.wikipedia.org/wiki/Launchd
  * 
- * aunchd在系统和用户级别管理守护进程。与 xinetd 类似，launchd 可以按需启动守护进程。
+ * launchd在系统和用户级别管理守护进程。与 xinetd 类似，launchd 可以按需启动守护进程。
  * 与 watchdogd 类似，launchd 可以监控守护进程以确保它们继续运行。在 macOS 上， launchd 也将 init 替换为PID 1，因此它负责在引导时启动系统。
  * 
  * Description:	Load the "init" program; in most cases, this will be "launchd"

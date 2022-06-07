@@ -480,6 +480,7 @@ objc_storeWeakOrNil(id *location, id newObj)
 id
 objc_initWeak(id *location, id newObj)
 {
+    //__weak id weakPtr = o; 这里的newObj 为o
     if (!newObj) {
         *location = nil;
         return nil;
